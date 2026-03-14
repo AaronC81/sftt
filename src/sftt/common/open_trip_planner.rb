@@ -1,0 +1,2 @@
+require_relative 'open_trip_planner/server'
+require_relative 'open_trip_planner/graphql_connection'

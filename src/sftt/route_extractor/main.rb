@@ -5,16 +5,21 @@
 require 'fileutils'
 require 'json'
 require 'concurrent'
-require_relative 'open_trip_planner'
+require_relative '../common/open_trip_planner'
 
-OUTPUT_DIRECTORY = File.join(__dir__, '..', '..', 'scratch', 'routes')
+OTP_CONFIG_DIRECTORY = File.join(__dir__, '..', '..', '..', 'scratch', 'otp')
+OTP_JAR = File.join(__dir__, '..', '..', '..', 'inputs', 'otp-shaded-2.8.1.jar')
+otp_server = Sftt::OpenTripPlanner::Server.new(OTP_JAR, OTP_CONFIG_DIRECTORY)
+otp_server.start(build_graph: true)
+at_exit do
+  otp_server.stop
+end
+
+OUTPUT_DIRECTORY = File.join(__dir__, '..', '..', '..', 'scratch', 'routes')
 FileUtils.mkdir_p(OUTPUT_DIRECTORY)
 
-quays = Sftt::OpenTripPlanner::Client
-  .query(Sftt::OpenTripPlanner::QuaysQuery)
-  .to_h['data']['quays']
-  .map { it['id'] }
-  .sort
+otp = Sftt::OpenTripPlanner::GraphQLConnection.new
+quays = otp.query_quays
 
 def quay_to_tiploc(quay)
   quay.split(':').last
@@ -29,13 +34,7 @@ quays.each do |from_quay|
     thread_pool.post do
       puts "  -> #{to_quay}"
 
-      response = Sftt::OpenTripPlanner::Client.query(
-        Sftt::OpenTripPlanner::TripQuery,
-        variables: {
-          fromPlace: from_quay,
-          toPlace: to_quay,
-        }
-      )
+      response = otp.query_trip(from_quay, to_quay)
       
       # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
       routes = []
