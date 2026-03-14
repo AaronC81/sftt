@@ -25,7 +25,7 @@ module Sftt
 
       def stop
         raise 'not running' unless @pid
-        Process.kill(@pid)
+        Process.kill(:SIGTERM, @pid)
         @pid = nil
       end
 
