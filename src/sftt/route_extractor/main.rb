@@ -87,34 +87,47 @@ unless quays.include?(to_quay)
 end
 
 all_routes = {}
+exceptions = []
 thread_pool = Concurrent::FixedThreadPool.new(16)
 quays.each do |from_quay|
   thread_pool.post do
-    puts "  #{from_quay}"
+    begin
+      puts "  #{from_quay}"
 
-    response = otp.query_trip(from_quay, to_quay)
-    
-    # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
-    routes = []
-    response.to_h['data']['trip']['tripPatterns'].each do |trip|
-      routes << {
-        legs: trip['legs']
-          .map do |leg| 
-            {
-              mode: leg['mode'],
-              from: quay_to_tiploc(leg['fromPlace']['quay']['id']),
-              to: quay_to_tiploc(leg['toPlace']['quay']['id']),
-              duration: leg['duration'],
-            }
-          end
-      }
+      response = otp.query_trip(from_quay, to_quay)
+      
+      # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
+      routes = []
+      response.to_h['data']['trip']['tripPatterns'].each do |trip|
+        routes << {
+          legs: trip['legs']
+            .map do |leg| 
+              {
+                mode: leg['mode'],
+                from: quay_to_tiploc(leg['fromPlace']['quay']['id']),
+                to: quay_to_tiploc(leg['toPlace']['quay']['id']),
+                duration: leg['duration'],
+              }
+            end
+        }
+      end
+      
+      all_routes[quay_to_tiploc(from_quay)] = { routes: }
+    rescue => e
+      exceptions << e
     end
-    
-    all_routes[quay_to_tiploc(from_quay)] = { routes: }
   end
 end
 
 thread_pool.shutdown
 thread_pool.wait_for_termination
+
+if exceptions.any?
+  puts "#{exceptions.length} exception(s) occurred while processing routes:"
+  exceptions.each do |e|
+    puts "  - #{e}"
+  end
+  abort
+end
 
 File.write(output_file, all_routes.to_json)
