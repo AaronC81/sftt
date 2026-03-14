@@ -9,7 +9,7 @@ module Sftt
       end
 
       # Start server and wait for GraphQL API to be ready
-      def start(build_graph: false, load_graph: false)
+      def start(memory:, build_graph: false, load_graph: false)
         raise ArgumentError, 'you must either build a graph, or load a built graph' unless build_graph ^ load_graph
 
         raise 'already running' if @pid
@@ -18,7 +18,7 @@ module Sftt
         else
           graph_args = ['--load']
         end
-        @pid = spawn('java', '-Xmx16G', '-jar', @jar, *graph_args, '--serve', @config_dir)
+        @pid = spawn('java', "-Xmx#{memory}G", '-jar', @jar, *graph_args, '--serve', @config_dir)
 
         wait_for_graphql
       end

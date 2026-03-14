@@ -19,6 +19,7 @@ date = Time.now.iso8601
 search_window = 120
 
 load = false
+memory = 16
 
 OptionParser.new do |parser|
   parser.on("--otp-config DIR", "Directory with OpenTripPlanner config") do |dir|
@@ -54,6 +55,10 @@ OptionParser.new do |parser|
   parser.on("--load", "Load an existing graph from --otp-config instead of building it") do
     load = true
   end
+
+  parser.on("--memory GB", "Number of gigabytes of memory to allocate for OpenTripPlanner. Default #{memory}") do |mem|
+    memory = Integer(mem)
+  end
 end.parse!
 
 raise '--otp-config is required' unless otp_config_dir
@@ -64,9 +69,9 @@ raise '--date is required' unless date
 
 otp_server = Sftt::OpenTripPlanner::Server.new(otp_jar, otp_config_dir)
 if load
-  otp_server.start(load_graph: true)
+  otp_server.start(memory:, load_graph: true)
 else
-  otp_server.start(build_graph: true)
+  otp_server.start(memory:, build_graph: true)
 end
 at_exit do
   otp_server.stop
