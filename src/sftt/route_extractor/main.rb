@@ -18,6 +18,8 @@ to_station = nil
 date = Time.now.iso8601
 search_window = 120
 
+load = false
+
 OptionParser.new do |parser|
   parser.on("--otp-config DIR", "Directory with OpenTripPlanner config") do |dir|
     raise '--otp-config specified more than once' if otp_config_dir
@@ -48,6 +50,10 @@ OptionParser.new do |parser|
     raise '--window specified more than once' if search_window
     search_window = Integer(window)
   end
+  
+  parser.on("--load", "Load an existing graph from --otp-config instead of building it") do
+    load = true
+  end
 end.parse!
 
 raise '--otp-config is required' unless otp_config_dir
@@ -57,7 +63,11 @@ raise '--to is required' unless to_station
 raise '--date is required' unless date
 
 otp_server = Sftt::OpenTripPlanner::Server.new(otp_jar, otp_config_dir)
-otp_server.start(build_graph: true)
+if load
+  otp_server.start(load_graph: true)
+else
+  otp_server.start(build_graph: true)
+end
 at_exit do
   otp_server.stop
 end
