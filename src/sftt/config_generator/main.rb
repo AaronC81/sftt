@@ -40,4 +40,4 @@ dtd_to_gtfs = Sftt::ConfigGenerator::DtdToGtfs.new(
 dtd_to_gtfs.convert
 
 foot_ix = Sftt::ConfigGenerator::FootInterchangeGenerator.new(OUTPUT_TIMETABLE_GTFS_DIR)
-foot_ix.generate(File.join(OTP_DIRECTORY, 'transfers.osm.pbf'))
+foot_ix.generate(File.join(output_dir, 'transfers.osm.pbf'))
