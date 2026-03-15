@@ -1,6 +1,6 @@
 # TODO: command-line options
 # TODO: include a fixed date/time in the query
-# TODO: when tube is supported, may need to differentiate between TIPLOCs or Tube Stations
+# TODO: when tube is supported, may need to differentiate between CRSes or Tube Stations
 
 require 'fileutils'
 require 'json'
@@ -37,7 +37,7 @@ OptionParser.new do |parser|
     output_file = file
   end
 
-  parser.on("--to ID", "TIPLOC of destination station to calculate routes to") do |id|
+  parser.on("--to ID", "CRS of destination station to calculate routes to") do |id|
     raise '--to specified more than once' if to_station
     to_station = id
   end
@@ -81,7 +81,7 @@ otp = Sftt::OpenTripPlanner::GraphQLConnection.new
 quays = otp.query_quays
 puts "Loaded #{quays.length} quays"
 
-def quay_to_tiploc(quay)
+def quay_to_crs(quay)
   quay.split(':').last
 end
 
@@ -109,15 +109,15 @@ quays.each do |from_quay|
             .map do |leg| 
               {
                 mode: leg['mode'],
-                from: quay_to_tiploc(leg['fromPlace']['quay']['id']),
-                to: quay_to_tiploc(leg['toPlace']['quay']['id']),
+                from: quay_to_crs(leg['fromPlace']['quay']['id']),
+                to: quay_to_crs(leg['toPlace']['quay']['id']),
                 duration: leg['duration'],
               }
             end
         }
       end
       
-      all_routes[quay_to_tiploc(from_quay)] = { routes: }
+      all_routes[quay_to_crs(from_quay)] = { routes: }
     rescue => e
       exceptions << e
     end

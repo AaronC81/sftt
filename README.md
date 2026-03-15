@@ -67,5 +67,4 @@ There's still stuff I want to improve for my own use-case:
 
 - Improve routes by removing similar/useless ones
 - It'd be nice if this covered the Tube network too
-- CRS would make more sense than TIPLOC
 - Add options to snap times into averages/approximates, e.g. "45 minutes" rather than "39 minutes"
