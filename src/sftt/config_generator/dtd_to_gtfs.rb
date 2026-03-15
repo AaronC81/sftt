@@ -102,7 +102,7 @@ module Sftt
         end
 
         # Rewrite stops.txt to keep only the "canonical" station definitions, with CRS as the new ID
-        CSV.open('stops.txt', 'w') do |writer|
+        CSV.open(output_gtfs_file('stops.txt'), 'w') do |writer|
           writer << stops.headers
           crs_to_stop.each do |crs, stop|
             stop['stop_id'] = crs
@@ -113,7 +113,7 @@ module Sftt
         # Rewrite stop_times.txt to reference stops with their new ID
         stop_times = CSV.new(File.read(output_gtfs_file('stop_times.txt')), headers: true)
         stop_times.each.first # Required to populate `#headers`
-        CSV.open('stop_times.txt', 'w') do |writer|
+        CSV.open(output_gtfs_file('stop_times.txt'), 'w') do |writer|
           writer << stop_times.headers
           stop_times.each do |stop_time|
             stop_time['stop_id'] = tiploc_to_crs[stop_time['stop_id']]
@@ -126,7 +126,7 @@ module Sftt
         # Rewrite transfers.txt to reference stops with their new ID
         transfers = CSV.new(File.read(output_gtfs_file('transfers.txt')), headers: true)
         transfers.each.first # Required to populate `#headers`
-        CSV.open('transfers.txt', 'w') do |writer|
+        CSV.open(output_gtfs_file('transfers.txt'), 'w') do |writer|
           writer << transfers.headers
           transfers.each do |transfer|
             transfer['from_stop_id'] = tiploc_to_crs[transfer['from_stop_id']]
