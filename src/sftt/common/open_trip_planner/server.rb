@@ -1,5 +1,9 @@
 require_relative 'graphql_connection'
 
+# Ensure Ruby and OpenTripPlanner output are printed in the correct order
+$stdout.sync = true
+$stderr.sync = true
+
 module Sftt
   module OpenTripPlanner
     class Server
