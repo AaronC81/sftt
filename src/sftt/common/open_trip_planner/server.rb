@@ -30,7 +30,7 @@ module Sftt
       end
 
       # Wait until the server is accepting GraphQL connections
-      private def wait_for_graphql(attempts: 240, delay: 1)
+      private def wait_for_graphql(attempts: 240, delay: 3)
         attempts.times do
           unless alive?
             raise "OpenTripPlanner process exited unexpectedly while waiting for API"
