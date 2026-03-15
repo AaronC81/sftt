@@ -28,13 +28,15 @@ module Sftt
           .sort
       end
 
-      def query_trip(from_quay, to_quay)
+      def query_trip(from_quay:, to_quay:, date_time:, search_window:)
         # TODO: transform to Ruby objects
         @client.query(
           TripQuery,
           variables: {
             fromPlace: from_quay,
             toPlace: to_quay,
+            dateTime: date_time,
+            searchWindow: search_window,
           },
         )
       end
@@ -51,14 +53,12 @@ module Sftt
         GRAPHQL
 
         GraphQLConnection.const_set :TripQuery, @client.parse(<<-GRAPHQL)
-          query($fromPlace: String, $toPlace: String) {
+          query($fromPlace: String, $toPlace: String, $dateTime: DateTime, $searchWindow: Int) {
             trip(
               from: { place: $fromPlace },
               to: { place: $toPlace },
-
-              # TODO: make these customisable from the CLI
-              dateTime: "2026-03-11T11:00:00.000Z",
-              searchWindow: 120,
+              dateTime: $dateTime,
+              searchWindow:  $searchWindow,
             ) {
               tripPatterns {
                 legs {

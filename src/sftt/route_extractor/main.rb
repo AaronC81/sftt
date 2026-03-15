@@ -99,7 +99,12 @@ quays.each do |from_quay|
     begin
       puts "  #{from_quay}"
 
-      response = otp.query_trip(from_quay, to_quay)
+      response = otp.query_trip(
+        from_quay:,
+        to_quay:,
+        date_time: date,
+        search_window:,
+      )
       
       # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
       routes = []
