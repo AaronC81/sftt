@@ -15,15 +15,15 @@ module Sftt
       attr_reader :input_dtd_zip, :output_gtfs_dir
 
       def convert
-        # raw_zip = output_gtfs_dir + "_raw.zip"
-        # convert_to_unprocessed_zip(raw_zip)
+        raw_zip = output_gtfs_dir + "_raw.zip"
+        convert_to_unprocessed_zip(raw_zip)
 
-        # system("unzip", "-o", raw_zip, "-d", output_gtfs_dir) or raise 'ZIP extraction failed'
-        # FileUtils.rm(raw_zip)
+        system("unzip", "-o", raw_zip, "-d", output_gtfs_dir) or raise 'ZIP extraction failed'
+        FileUtils.rm(raw_zip)
 
-        # postprocess_clean_transfers
+        postprocess_clean_transfers
         postprocess_convert_tiploc_to_crs
-        # postprocess_add_missing_stops
+        postprocess_add_missing_stops
       end
 
       # Run the UK2GTFS R library to perform most of the conversion.
