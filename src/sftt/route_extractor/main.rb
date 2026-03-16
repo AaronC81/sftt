@@ -43,12 +43,10 @@ OptionParser.new do |parser|
   end
 
   parser.on("--date DATE", "ISO 8601 datetime for routing start time. Default now") do |d|
-    raise '--date specified more than once' if date
     date = d
   end
 
   parser.on("--window WINDOW", "Number of minutes to search after the --date. Default #{search_window}") do |window|
-    raise '--window specified more than once' if search_window
     search_window = Integer(window)
   end
   
@@ -65,7 +63,6 @@ raise '--otp-config is required' unless otp_config_dir
 raise '--otp-jar is required' unless otp_jar
 raise '--output is required' unless output_file
 raise '--to is required' unless to_station
-raise '--date is required' unless date
 
 otp_server = Sftt::OpenTripPlanner::Server.new(otp_jar, otp_config_dir)
 if load
