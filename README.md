@@ -60,11 +60,3 @@ ruby src/sftt/route_extractor/main.rb ^
     --to LEEDS
     --output LEEDS.json
 ```
-
-## TODO
-
-There's still stuff I want to improve for my own use-case:
-
-- Improve routes by removing similar/useless ones
-- It'd be nice if this covered the Tube network too
-- Add options to snap times into averages/approximates, e.g. "45 minutes" rather than "39 minutes"

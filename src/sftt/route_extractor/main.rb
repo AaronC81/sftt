@@ -1,7 +1,3 @@
-# TODO: command-line options
-# TODO: include a fixed date/time in the query
-# TODO: when tube is supported, may need to differentiate between CRSes or Tube Stations
-
 require 'fileutils'
 require 'json'
 require 'concurrent'
@@ -9,6 +5,7 @@ require 'optparse'
 require 'time'
 
 require_relative '../common/open_trip_planner'
+require_relative 'tfl_replace'
 
 otp_config_dir = nil
 otp_jar = nil
@@ -20,6 +17,8 @@ search_window = 120
 
 load = false
 memory = 16
+
+tfl = false
 
 OptionParser.new do |parser|
   parser.on("--otp-config DIR", "Directory with OpenTripPlanner config") do |dir|
@@ -56,6 +55,10 @@ OptionParser.new do |parser|
 
   parser.on("--memory GB", "Number of gigabytes of memory to allocate for OpenTripPlanner. Default #{memory}") do |mem|
     memory = Integer(mem)
+  end
+
+  parser.on("--tfl", "Include TFL bus/tube transfers") do
+    tfl = true
   end
 end.parse!
 
@@ -117,6 +120,12 @@ quays.each do |from_quay|
               }
             end
         }
+      end
+
+      if tfl
+        routes.each do |route|
+          Sftt::TflReplace.process_route(route[:legs])
+        end
       end
       
       all_routes[quay_to_crs(from_quay)] = { routes: }
