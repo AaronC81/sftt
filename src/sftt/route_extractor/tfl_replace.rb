@@ -7,8 +7,6 @@ module Sftt
 
     # Mutate a `legs` array (like JSON format) to improve TFL links.
     def self.process_route(legs)
-      # TODO: Check how this handles KGX/SPX. currently a 5 min walk
-
       # We're specifically looking for legs that transfer within London, e.g.
       #
       #    Crewe -> Euston ; Euston -> Waterloo ; Waterloo -> Southampton
