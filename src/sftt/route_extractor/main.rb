@@ -20,6 +20,8 @@ memory = 16
 
 tfl = false
 
+console = false
+
 OptionParser.new do |parser|
   parser.on("--otp-config DIR", "Directory with OpenTripPlanner config") do |dir|
     raise '--otp-config specified more than once' if otp_config_dir
@@ -60,12 +62,18 @@ OptionParser.new do |parser|
   parser.on("--tfl", "Include TFL bus/tube transfers") do
     tfl = true
   end
+
+  parser.on("--console", "Instead of creating an output file, open an interactive console for routing") do
+    console = true
+  end
 end.parse!
 
 raise '--otp-config is required' unless otp_config_dir
 raise '--otp-jar is required' unless otp_jar
-raise '--output is required' unless output_file
-raise '--to is required' unless to_station
+unless console
+  raise '--output is required' unless output_file
+  raise '--to is required' unless to_station
+end
 
 otp_server = Sftt::OpenTripPlanner::Server.new(otp_jar, otp_config_dir)
 if load
@@ -85,65 +93,88 @@ def quay_to_crs(quay)
   quay.split(':').last
 end
 
-# Assuming that there's only one transit source so the prefix is `1:`
-to_quay = "1:#{to_station}"
-unless quays.include?(to_quay)
-  raise 'unknown --to station'
-end
+def calculate_routes(otp, from_quay, to_quay, date:, tfl:, search_window:)
+  response = otp.query_trip(
+    from_quay:,
+    to_quay:,
+    date_time: date,
+    search_window:,
+  )
 
-all_routes = {}
-exceptions = []
-thread_pool = Concurrent::FixedThreadPool.new(16)
-quays.each do |from_quay|
-  thread_pool.post do
-    begin
-      puts "  #{from_quay}"
-
-      response = otp.query_trip(
-        from_quay:,
-        to_quay:,
-        date_time: date,
-        search_window:,
-      )
-      
-      # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
-      routes = []
-      response.to_h['data']['trip']['tripPatterns'].each do |trip|
-        routes << {
-          legs: trip['legs']
-            .map do |leg| 
-              {
-                mode: leg['mode'],
-                from: quay_to_crs(leg['fromPlace']['quay']['id']),
-                to: quay_to_crs(leg['toPlace']['quay']['id']),
-                duration: leg['duration'],
-              }
-            end
-        }
-      end
-
-      if tfl
-        routes.each do |route|
-          Sftt::TflReplace.process_route(route[:legs])
+  # TODO: prune to "best" route if there are multiple (e.g. LEEDS -> YORK, many direct trains)
+  routes = []
+  response.to_h['data']['trip']['tripPatterns'].each do |trip|
+    routes << {
+      legs: trip['legs']
+        .map do |leg| 
+          {
+            mode: leg['mode'],
+            from: quay_to_crs(leg['fromPlace']['quay']['id']),
+            to: quay_to_crs(leg['toPlace']['quay']['id']),
+            duration: leg['duration'],
+          }
         end
-      end
-      
-      all_routes[quay_to_crs(from_quay)] = { routes: }
-    rescue => e
-      exceptions << e
+    }
+  end
+
+  if tfl
+    routes.each do |route|
+      Sftt::TflReplace.process_route(route[:legs])
     end
   end
+
+  routes
 end
 
-thread_pool.shutdown
-thread_pool.wait_for_termination
 
-if exceptions.any?
-  puts "#{exceptions.length} exception(s) occurred while processing routes:"
-  exceptions.each do |e|
-    puts "  - #{e}"
+if console
+  # === Console mode ===
+  puts "Router console ready!"
+  puts "Enter two CRS codes separated by >"
+  puts
+  loop do
+    from, to = $stdin.gets.split('>').map(&:strip)
+    pp calculate_routes(otp, "1:#{from}", "1:#{to}", date:, tfl:, search_window:)
+    puts
+  rescue
+    puts 'Failed to get route'
+    puts
   end
-  abort
-end
 
-File.write(output_file, all_routes.to_json)
+else
+  # === Generator mode ===
+
+  # Assuming that there's only one transit source so the prefix is `1:`
+  to_quay = "1:#{to_station}"
+  unless quays.include?(to_quay)
+    raise 'unknown --to station'
+  end
+
+  all_routes = {}
+  exceptions = []
+  thread_pool = Concurrent::FixedThreadPool.new(16)
+  quays.each do |from_quay|
+    thread_pool.post do
+      begin
+        puts "  #{from_quay}"
+        routes = calculate_routes(otp, from_quay, to_quay, date:, tfl:, search_window:)
+        all_routes[quay_to_crs(from_quay)] = { routes: }
+      rescue => e
+        exceptions << e
+      end
+    end
+  end
+
+  thread_pool.shutdown
+  thread_pool.wait_for_termination
+
+  if exceptions.any?
+    puts "#{exceptions.length} exception(s) occurred while processing routes:"
+    exceptions.each do |e|
+      puts "  - #{e}"
+    end
+    abort
+  end
+
+  File.write(output_file, all_routes.to_json)
+end
